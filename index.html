@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bingo - Buy Cards & Play</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #0a0e1a 0%, #1a1f2e 100%);
+      color: #fff;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    .game-wrapper {
+      display: grid;
+      grid-template-columns: 320px 1fr 380px;
+      gap: 20px;
+      padding: 20px;
+      max-width: 1600px;
+      margin: 0 auto;
+      min-height: 100vh;
+    }
+
+    /* LEFT PANEL */
+    .left-panel {
+      background: rgba(10, 15, 30, 0.95);
+      border-radius: 12px;
+      padding: 20px;
+      border: 1px solid rgba(0, 255, 255, 0.1);
+    }
+
+    .game-header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .game-title {
+      font-size: 2.5rem;
+      font-weight: 800;
+      color: #00d4ff;
+      text-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
+      letter-spacing: 2px;
+    }
+
+    .game-id {
+      color: #64748b;
+      font-size: 0.9rem;
+      margin-top: 5px;
+    }
+
+    .status-badge {
+      display: inline-block;
+      background: linear-gradient(135deg, #00ff88, #00cc6a);
+      color: #000;
+      padding: 8px 20px;
+      border-radius: 20px;
+      font-weight: 700;
+      font-size: 0.9rem;
+      margin-bottom: 15px;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.8; }
+    }
+
+    .timer-section {
+      text-align: center;
+      margin: 30px 0;
+      padding: 20px;
+      background: rgba(0, 212, 255, 0.05);
+      border-radius: 10px;
+      border: 1px solid rgba(0, 212, 255, 0.2);
+    }
+
+    .timer-label {
+      color: #64748b;
+      font-size: 0.85rem;
+      letter-spacing: 1px;
+      margin-bottom: 10px;
+    }
+
+    .timer-value {
+      font-size: 4rem;
+      font-weight: 800;
+      color: #00d4ff;
+      text-shadow: 0 0 30px rgba(0, 212, 255, 0.6);
+      font-family: 'Courier New', monospace;
+    }
+
+    .bingo-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 6px;
+      margin-top: 20px;
+    }
+
+    .bingo-header {
+      text-align: center;
+      font-weight: 800;
+      font-size: 1.5rem;
+      padding: 10px;
+      border-radius: 6px;
+    }
+
+    .bingo-header.b { background: linear-gradient(135deg, #00d4ff, #0099cc); color: #000; }
+    .bingo-header.i { background: linear-gradient(135deg, #ff6b6b, #ee5a5a); color: #fff; }
+    .bingo-header.n { background: linear-gradient(135deg, #4ecdc4, #44a08d); color: #000; }
+    .bingo-header.g { background: linear-gradient(135deg, #ffd93d, #f9c846); color: #000; }
+    .bingo-header.o { background: linear-gradient(135deg, #a855f7, #7c3aed); color: #fff; }
+
+    .number-cell {
+      aspect-ratio: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 6px;
+      font-size: 0.85rem;
+      color: #94a3b8;
+      transition: all 0.3s;
+    }
+
+    .number-cell.called {
+      background: rgba(0, 212, 255, 0.3);
+      border-color: #00d4ff;
+      color: #00d4ff;
+      font-weight: 700;
+      transform: scale(1.05);
+      box-shadow: 0 0 15px rgba(0, 212, 255, 0.4);
+    }
+
+    .number-cell.winner {
+      background: linear-gradient(135deg, #00ff88, #00cc6a);
+      color: #000;
+      border-color: #00ff88;
+      animation: winPulse 0.5s ease;
+    }
+
+    @keyframes winPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.15); }
+    }
+
+    /* CENTER PANEL */
+    .center-panel {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(10, 15, 30, 0.6);
+      border-radius: 12px;
+      padding: 40px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      position: relative;
+    }
+
+    .current-ball {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #00d4ff, #0099cc);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 4rem;
+      font-weight: 800;
+      color: #fff;
+      box-shadow: 0 0 60px rgba(0, 212, 255, 0.6);
+      margin-bottom: 30px;
+      animation: ballDrop 0.5s ease;
+    }
+
+    @keyframes ballDrop {
+      0% { transform: translateY(-50px) scale(0.5); opacity: 0; }
+      50% { transform: translateY(10px) scale(1.1); }
+      100% { transform: translateY(0) scale(1); opacity: 1; }
+    }
+
+    .center-message {
+      text-align: center;
+      font-size: 1.3rem;
+      color: #64748b;
+      margin-bottom: 10px;
+    }
+
+    .center-submessage {
+      font-size: 0.95rem;
+      color: #475569;
+    }
+
+    .cards-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+      width: 100%;
+      margin-top: 30px;
+      max-height: 600px;
+      overflow-y: auto;
+      padding: 10px;
+    }
+
+    .bingo-card {
+      background: rgba(15, 23, 42, 0.95);
+      border-radius: 12px;
+      padding: 15px;
+      border: 2px solid rgba(0, 212, 255, 0.3);
+      position: relative;
+    }
+
+    .card-header {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 5px;
+      margin-bottom: 10px;
+    }
+
+    .card-header-cell {
+      text-align: center;
+      font-weight: 800;
+      font-size: 1.2rem;
+      padding: 8px;
+      border-radius: 6px;
+      background: rgba(0, 212, 255, 0.2);
+      color: #00d4ff;
+    }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 5px;
+    }
+
+    .card-cell {
+      aspect-ratio: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 6px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .card-cell.marked {
+      background: linear-gradient(135deg, #00ff88, #00cc6a);
+      color: #000;
+      border-color: #00ff88;
+      box-shadow: 0 0 10px rgba(0, 255, 136, 0.4);
+    }
+
+    .card-cell.free {
+      background: linear-gradient(135deg, #ffd93d, #f9c846);
+      color: #000;
+      font-size: 0.75rem;
+    }
+
+    .card-cell.highlight {
+      animation: cardPulse 0.5s ease;
+    }
+
+    @keyframes cardPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+
+    .card-id {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      font-size: 0.75rem;
+      color: #64748b;
+    }
+
+    /* RIGHT PANEL */
+    .right-panel {
+      background: rgba(10, 15, 30, 0.95);
+      border-radius: 12px;
+      padding: 20px;
+      border: 1px solid rgba(0, 255, 136, 0.1);
+    }
+
+    .tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .tab {
+      flex: 1;
+      padding: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border: none;
+      border-radius: 8px;
+      color: #64748b;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-size: 0.9rem;
+    }
+
+    .tab.active {
+      background: linear-gradient(135deg, #00d4ff, #0099cc);
+      color: #000;
+    }
+
+    .bet-amount-section {
+      margin-bottom: 20px;
+    }
+
+    .section-label {
+      color: #64748b;
+      font-size: 0.85rem;
+      margin-bottom: 10px;
+      display: block;
+    }
+
+    .bet-options {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .bet-option {
+      padding: 15px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-weight: 700;
+      font-size: 1.1rem;
+    }
+
+    .bet-option:hover {
+      border-color: rgba(0, 212, 255, 0.5);
+      background: rgba(0, 212, 255, 0.1);
+    }
+
+    .bet-option.selected {
+      border-color: #00d4ff;
+      background: rgba(0, 212, 255, 0.2);
+      color: #00d4ff;
+      box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+    }
+
+    .cards-selector {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .card-count-btn {
+      flex: 1;
+      min-width: 50px;
+      padding: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      color: #fff;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .card-count-btn:hover {
+      border-color: rgba(0, 255, 136, 0.5);
+    }
+
+    .card-count-btn.selected {
+      border-color: #00ff88;
+      background: rgba(0, 255, 136, 0.2);
+      color: #00ff88;
+    }
+
+    .total-cost {
+      background: rgba(0, 255, 136, 0.1);
+      border: 1px solid rgba(0, 255, 136, 0.3);
+      border-radius: 10px;
+      padding: 15px;
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .total-label {
+      color: #64748b;
+      font-size: 0.95rem;
+    }
+
+    .total-value {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: #00ff88;
+    }
+
+    .buy-btn {
+      width: 100%;
+      padding: 18px;
+      background: linear-gradient(135deg, #00d4ff, #0099cc);
+      border: none;
+      border-radius: 10px;
+      color: #000;
+      font-weight: 800;
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: all 0.3s;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 25px;
+    }
+
+    .buy-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(0, 212, 255, 0.4);
+    }
+
+    .buy-btn:active {
+      transform: translateY(0);
+    }
+
+    .potential-wins {
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      padding-top: 20px;
+    }
+
+    .wins-title {
+      color: #00d4ff;
+      font-weight: 700;
+      margin-bottom: 15px;
+      font-size: 1rem;
+    }
+
+    .win-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: 0.9rem;
+    }
+
+    .win-name {
+      color: #94a3b8;
+    }
+
+    .win-amount {
+      color: #00ff88;
+      font-weight: 700;
+    }
+
+    .win-amount.jackpot {
+      color: #ffd93d;
+      font-size: 1.1rem;
+    }
+
+    /* Responsive */
+    @media (max-width: 1200px) {
+      .game-wrapper {
+        grid-template-columns: 1fr;
+      }
+      .left-panel, .center-panel, .right-panel {
+        max-width: 600px;
+        margin: 0 auto;
+      }
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(0, 212, 255, 0.3);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(0, 212, 255, 0.5);
+    }
+  </style>
+</head>
+<body>
+  <div class="game-wrapper">
+    <!-- LEFT PANEL -->
+    <div class="left-panel">
+      <div class="game-header">
+        <div class="game-title">BINGO</div>
+        <div class="game-id">BG91465</div>
+      </div>
+      
+      <div style="text-align: center;">
+        <span class="status-badge" id="statusBadge">BETTING OPEN</span>
+      </div>
+      
+      <div class="timer-section">
+        <div class="timer-label">TIME REMAINING</div>
+        <div class="timer-value" id="timer">20</div>
+      </div>
+      
+      <div style="text-align: center; color: #64748b; margin: 20px 0;">
+        Place your bets!
+      </div>
+      
+      <div class="bingo-grid" id="calledNumbersGrid">
+        <!-- Headers -->
+        <div class="bingo-header b">B</div>
+        <div class="bingo-header i">I</div>
+        <div class="bingo-header n">N</div>
+        <div class="bingo-header g">G</div>
+        <div class="bingo-header o">O</div>
+        <!-- Numbers will be generated by JS -->
+      </div>
+    </div>
+
+    <!-- CENTER PANEL -->
+    <div class="center-panel">
+      <div class="current-ball" id="currentBall" style="display: none;">8</div>
+      <div class="center-message" id="centerMessage">Purchase cards to play!</div>
+      <div class="center-submessage" id="centerSubmessage">Select bet amount and buy cards from the right panel</div>
+      
+      <div class="cards-container" id="cardsContainer" style="display: none;">
+        <!-- Cards will be generated here -->
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="right-panel">
+      <div class="tabs">
+        <button class="tab active" id="buyCardsTab">BUY CARDS</button>
+        <button class="tab" id="myBetsTab">MY BETS</button>
+      </div>
+      
+      <div class="bet-amount-section">
+        <span class="section-label">BET AMOUNT (ETB)</span>
+        <div class="bet-options">
+          <div class="bet-option selected" data-amount="10">10</div>
+          <div class="bet-option" data-amount="20">20</div>
+          <div class="bet-option" data-amount="50">50</div>
+          <div class="bet-option" data-amount="100">100</div>
+        </div>
+      </div>
+      
+      <span class="section-label">Number of Cards</span>
+      <div class="cards-selector">
+        <button class="card-count-btn selected" data-count="1">1</button>
+        <button class="card-count-btn" data-count="2">2</button>
+        <button class="card-count-btn" data-count="3">3</button>
+        <button class="card-count-btn" data-count="4">4</button>
+        <button class="card-count-btn" data-count="5">5</button>
+      </div>
+      
+      <div class="total-cost">
+        <span class="total-label">Total Cost</span>
+        <span class="total-value" id="totalCost">10 ETB</span>
+      </div>
+      
+      <button class="buy-btn" id="buyCardsBtn">BUY CARDS</button>
+      
+      <div class="potential-wins">
+        <div class="wins-title">POTENTIAL WINS</div>
+        <div class="win-item">
+          <span class="win-name">One Line</span>
+          <span class="win-amount">100 ETB</span>
+        </div>
+        <div class="win-item">
+          <span class="win-name">Four Corners</span>
+          <span class="win-amount">100 ETB</span>
+        </div>
+        <div class="win-item">
+          <span class="win-name">Diagonal</span>
+          <span class="win-amount">150 ETB</span>
+        </div>
+        <div class="win-item">
+          <span class="win-name">Two Lines</span>
+          <span class="win-amount">250 ETB</span>
+        </div>
+        <div class="win-item">
+          <span class="win-name">Full House</span>
+          <span class="win-amount jackpot">1,000-5,000 ETB</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Game State
+    let gameState = {
+      betAmount: 10,
+      cardCount: 1,
+      cards: [],
+      calledNumbers: [],
+      gamePhase: 'betting', // betting, playing, ended
+      timer: 20,
+      timerInterval: null
+    };
+
+    // DOM Elements
+    const els = {
+      timer: document.getElementById('timer'),
+      statusBadge: document.getElementById('statusBadge'),
+      currentBall: document.getElementById('currentBall'),
+      centerMessage: document.getElementById('centerMessage'),
+      centerSubmessage: document.getElementById('centerSubmessage'),
+      cardsContainer: document.getElementById('cardsContainer'),
+      calledNumbersGrid: document.getElementById('calledNumbersGrid'),
+      totalCost: document.getElementById('totalCost'),
+      buyCardsBtn: document.getElementById('buyCardsBtn'),
+      betOptions: document.querySelectorAll('.bet-option'),
+      cardCountBtns: document.querySelectorAll('.card-count-btn')
+    };
+
+    // Initialize called numbers grid (1-75)
+    function initCalledNumbersGrid() {
+      for (let i = 1; i <= 75; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'number-cell';
+        cell.id = `called-${i}`;
+        cell.textContent = i;
+        els.calledNumbersGrid.appendChild(cell);
+      }
+    }
+
+    // Generate Bingo Card
+    function generateBingoCard() {
+      const card = {
+        id: Math.random().toString(36).substr(2, 9).toUpperCase(),
+        numbers: []
+      };
+
+      // B: 1-15, I: 16-30, N: 31-45, G: 46-60, O: 61-75
+      const ranges = [
+        { min: 1, max: 15 },
+        { min: 16, max: 30 },
+        { min: 31, max: 45 },
+        { min: 46, max: 60 },
+        { min: 61, max: 75 }
+      ];
+
+      for (let col = 0; col < 5; col++) {
+        const range = ranges[col];
+        const nums = [];
+        while (nums.length < 5) {
+          const num = Math.floor(Math.random() * (range.max - range.min + 1)) + range.min;
+          if (!nums.includes(num)) nums.push(num);
+        }
+        card.numbers.push(nums);
+      }
+
+      // Mark free space (center)
+      card.marked = Array(5).fill(null).map(() => Array(5).fill(false));
+      card.marked[2][2] = true; // Free space
+
+      return card;
+    }
+
+    // Render Cards
+    function renderCards() {
+      els.cardsContainer.innerHTML = '';
+      
+      gameState.cards.forEach((card, cardIndex) => {
+        const cardEl = document.createElement('div');
+        cardEl.className = 'bingo-card';
+        cardEl.innerHTML = `
+          <div class="card-id">Card #${card.id}</div>
+          <div class="card-header">
+            <div class="card-header-cell">B</div>
+            <div class="card-header-cell">I</div>
+            <div class="card-header-cell">N</div>
+            <div class="card-header-cell">G</div>
+            <div class="card-header-cell">O</div>
+          </div>
+          <div class="card-grid">
+            ${generateCardHTML(card)}
+          </div>
+        `;
+        els.cardsContainer.appendChild(cardEl);
+      });
+    }
+
+    function generateCardHTML(card) {
+      let html = '';
+      for (let row = 0; row < 5; row++) {
+        for (let col = 0; col < 5; col++) {
+          const isFree = row === 2 && col === 2;
+          const num = isFree ? 'FREE' : card.numbers[col][row];
+          const marked = card.marked[col][row];
+          html += `
+            <div class="card-cell ${marked ? 'marked' : ''} ${isFree ? 'free' : ''}" 
+                 data-card="${gameState.cards.indexOf(card)}" 
+                 data-col="${col}" 
+                 data-row="${row}">
+              ${num}
+            </div>
+          `;
+        }
+      }
+      return html;
+    }
+
+    // Start Timer
+    function startTimer() {
+      gameState.timer = 20;
+      els.timer.textContent = gameState.timer;
+      
+      gameState.timerInterval = setInterval(() => {
+        gameState.timer--;
+        els.timer.textContent = gameState.timer;
+        
+        if (gameState.timer <= 0) {
+          clearInterval(gameState.timerInterval);
+          startGame();
+        }
+      }, 1000);
+    }
+
+    // Start Game
+    function startGame() {
+      if (gameState.cards.length === 0) {
+        alert('Please buy at least one card!');
+        return;
+      }
+
+      gameState.gamePhase = 'playing';
+      els.statusBadge.textContent = 'GAME IN PROGRESS';
+      els.statusBadge.style.background = 'linear-gradient(135deg, #ffd93d, #f9c846)';
+      els.currentBall.style.display = 'flex';
+      els.cardsContainer.style.display = 'grid';
+      els.centerMessage.textContent = 'Good Luck!';
+      els.centerSubmessage.textContent = 'Watch for your numbers!';
+
+      // Start calling numbers
+      callNumbers();
+    }
+
+    // Call Numbers
+    async function callNumbers() {
+      const available = Array.from({length: 75}, (_, i) => i + 1);
+      
+      for (let i = 0; i < 75 && gameState.gamePhase === 'playing'; i++) {
+        await sleep(2000);
+        
+        const idx = Math.floor(Math.random() * available.length);
+        const num = available.splice(idx, 1)[0];
+        gameState.calledNumbers.push(num);
+        
+        // Update display
+        els.currentBall.textContent = num;
+        els.currentBall.style.animation = 'none';
+        setTimeout(() => {
+          els.currentBall.style.animation = 'ballDrop 0.5s ease';
+        }, 10);
+        
+        // Mark on grid
+        const cell = document.getElementById(`called-${num}`);
+        if (cell) {
+          cell.classList.add('called');
+        }
+        
+        // Check and mark on cards
+        checkCards(num);
+        
+        // Check for winners
+        checkWinners();
+      }
+    }
+
+    function checkCards(num) {
+      gameState.cards.forEach((card, cardIdx) => {
+        for (let col = 0; col < 5; col++) {
+          for (let row = 0; row < 5; row++) {
+            if (card.numbers[col][row] === num) {
+              card.marked[col][row] = true;
+              // Highlight on card
+              const cell = document.querySelector(
+                `.card-cell[data-card="${cardIdx}"][data-col="${col}"][data-row="${row}"]`
+              );
+              if (cell) {
+                cell.classList.add('marked', 'highlight');
+                setTimeout(() => cell.classList.remove('highlight'), 500);
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function checkWinners() {
+      gameState.cards.forEach((card, idx) => {
+        const patterns = checkPatterns(card);
+        if (patterns.length > 0) {
+          // Highlight winning patterns
+          patterns.forEach(pattern => {
+            pattern.cells.forEach(([col, row]) => {
+              const cell = document.querySelector(
+                `.card-cell[data-card="${idx}"][data-col="${col}"][data-row="${row}"]`
+              );
+              if (cell) cell.classList.add('winner');
+            });
+          });
+          
+          if (gameState.gamePhase !== 'ended') {
+            setTimeout(() => {
+              alert(`🎉 BINGO! Card #${card.id} wins with: ${patterns.map(p => p.name).join(', ')}`);
+              gameState.gamePhase = 'ended';
+              els.statusBadge.textContent = 'GAME ENDED';
+              els.statusBadge.style.background = 'linear-gradient(135deg, #00ff88, #00cc6a)';
+            }, 500);
+          }
+        }
+      });
+    }
+
+    function checkPatterns(card) {
+      const patterns = [];
+      const m = card.marked;
+
+      // Check rows
+      for (let row = 0; row < 5; row++) {
+        if (m.every(col => col[row])) {
+          patterns.push({
+            name: 'Line ' + (row + 1),
+            cells: Array.from({length: 5}, (_, i) => [i, row])
+          });
+        }
+      }
+
+      // Check columns
+      for (let col = 0; col < 5; col++) {
+        if (m[col].every(cell => cell)) {
+          patterns.push({
+            name: 'Column ' + String.fromCharCode(66 + col),
+            cells: Array.from({length: 5}, (_, i) => [col, i])
+          });
+        }
+      }
+
+      // Check diagonals
+      if (m.every((col, i) => col[i])) {
+        patterns.push({
+          name: 'Diagonal TL-BR',
+          cells: Array.from({length: 5}, (_, i) => [i, i])
+        });
+      }
+      
+      if (m.every((col, i) => col[4-i])) {
+        patterns.push({
+          name: 'Diagonal TR-BL',
+          cells: Array.from({length: 5}, (_, i) => [i, 4-i])
+        });
+      }
+
+      // Check corners
+      if (m[0][0] && m[0][4] && m[4][0] && m[4][4]) {
+        patterns.push({
+          name: 'Four Corners',
+          cells: [[0,0], [0,4], [4,0], [4,4]]
+        });
+      }
+
+      // Check full house
+      if (m.every(col => col.every(cell => cell))) {
+        patterns.push({
+          name: 'Full House',
+          cells: Array.from({length: 25}, (_, i) => [i % 5, Math.floor(i / 5)])
+        });
+      }
+
+      return patterns;
+    }
+
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    // Event Listeners
+    els.betOptions.forEach(opt => {
+      opt.addEventListener('click', () => {
+        els.betOptions.forEach(o => o.classList.remove('selected'));
+        opt.classList.add('selected');
+        gameState.betAmount = parseInt(opt.dataset.amount);
+        updateTotalCost();
+      });
+    });
+
+    els.cardCountBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        els.cardCountBtns.forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        gameState.cardCount = parseInt(btn.dataset.count);
+        updateTotalCost();
+      });
+    });
+
+    function updateTotalCost() {
+      const total = gameState.betAmount * gameState.cardCount;
+      els.totalCost.textContent = `${total} ETB`;
+    }
+
+    els.buyCardsBtn.addEventListener('click', () => {
+      gameState.cards = [];
+      for (let i = 0; i < gameState.cardCount; i++) {
+        gameState.cards.push(generateBingoCard());
+      }
+      renderCards();
+      els.cardsContainer.style.display = 'grid';
+      els.centerMessage.textContent = 'Cards purchased!';
+      els.centerSubmessage.textContent = `You bought ${gameState.cardCount} card(s). Waiting for game to start...`;
+      showToast(`✅ Bought ${gameState.cardCount} card(s) for ${gameState.betAmount * gameState.cardCount} ETB`);
+    });
+
+    function showToast(msg) {
+      const toast = document.createElement('div');
+      toast.style.cssText = `
+        position: fixed;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: linear-gradient(135deg, #00ff88, #00cc6a);
+        color: #000;
+        padding: 15px 30px;
+        border-radius: 10px;
+        font-weight: 700;
+        z-index: 1000;
+        animation: slideUp 0.3s ease;
+      `;
+      toast.textContent = msg;
+      document.body.appendChild(toast);
+      setTimeout(() => {
+        toast.style.animation = 'fadeOut 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    // Add animations
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes slideUp {
+        from { transform: translate(-50%, 20px); opacity: 0; }
+        to { transform: translate(-50%, 0); opacity: 1; }
+      }
+      @keyframes fadeOut {
+        to { opacity: 0; transform: translate(-50%, -10px); }
+      }
+    `;
+    document.head.appendChild(style);
+
+    // Initialize
+    initCalledNumbersGrid();
+    startTimer();
+  </script>
+</body>
+</html>
